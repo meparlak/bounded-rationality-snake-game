@@ -6,6 +6,8 @@ A classic Snake game built with plain HTML5 Canvas, CSS, and vanilla JavaScript 
 
 Repo: https://github.com/meparlak/bounded-rationality-snake-game
 
+Play it live: https://meparlak.github.io/bounded-rationality-snake-game/
+
 ## Bounded Rationality
 
 **Bounded rationality**, a concept introduced by Herbert Simon, describes how real decision-makers actually behave, in contrast to the "perfectly rational" agent assumed by classical economics and game theory. A perfectly rational agent has unlimited time, unlimited information, and unlimited computational power, and always picks the objectively optimal action. Real agents — human or artificial — never have this. They face:
