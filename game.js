@@ -184,8 +184,10 @@
     goldFood = pool[Math.floor(Math.random() * pool.length)];
   }
 
+  const LEVEL_SPEED_FACTOR = 1.05;
+
   function currentSpeedUp() {
-    return Math.min(score * 1.25, MAX_SPEEDUP_MS);
+    return Math.min(BASE_SPEED_MS - BASE_SPEED_MS / (LEVEL_SPEED_FACTOR ** (level - 1)), MAX_SPEEDUP_MS);
   }
 
   function currentSpeed() {
