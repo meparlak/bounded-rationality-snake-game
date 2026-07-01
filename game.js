@@ -185,7 +185,7 @@
   }
 
   function currentSpeedUp() {
-    return Math.min(score * 2.5, MAX_SPEEDUP_MS);
+    return Math.min(score * 1.25, MAX_SPEEDUP_MS);
   }
 
   function currentSpeed() {
@@ -558,7 +558,7 @@
       highScoreEl.textContent = highScore;
     }
     hideToast();
-    overlayMessage.textContent = `Oyun bitti! Skor: ${score} · Seviye ${level}. Tekrar denemek için Space veya Başlat'a bas.`;
+    overlayMessage.textContent = '';
     startBtn.textContent = 'Yeniden Başlat';
     overlay.classList.remove('hidden');
     showSummary();
@@ -580,7 +580,7 @@
       clearTimeout(loopId);
       stopRender();
       hideToast();
-      overlayMessage.textContent = 'Duraklatıldı. Devam etmek için Space.';
+      overlayMessage.textContent = '';
       startBtn.textContent = 'Devam Et';
       overlay.classList.remove('hidden');
     } else {
