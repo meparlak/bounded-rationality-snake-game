@@ -4,6 +4,8 @@ A classic Snake game built with plain HTML5 Canvas, CSS, and vanilla JavaScript 
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+Repo: https://github.com/meparlak/bounded-rationality-snake-game
+
 ## Features
 
 - Smooth grid-based movement with keyboard (arrow keys / WASD) and on-screen touch controls for mobile
