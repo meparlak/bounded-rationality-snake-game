@@ -6,6 +6,12 @@ A classic Snake game built with plain HTML5 Canvas, CSS, and vanilla JavaScript 
 
 Repo: https://github.com/meparlak/bounded-rationality-snake-game
 
+## Bounded Rationality
+
+This game was built as a small, hands-on way to grasp the concept of **bounded rationality** — the idea that decision-makers act with limited information, limited time, and limited cognitive capacity, so they settle for a "good enough" move rather than the theoretically optimal one.
+
+In Snake, the player (or an automated agent) only sees the current board state and must decide the next move in real time, without being able to fully search all future consequences. This mirrors bounded rationality well and makes the game a convenient base for simple theoretical simulations — e.g. comparing a greedy/heuristic-driven snake agent against an ideal, fully-informed agent, or studying how decision quality degrades as available "thinking time" per move shrinks.
+
 ## Features
 
 - Smooth grid-based movement with keyboard (arrow keys / WASD) and on-screen touch controls for mobile
