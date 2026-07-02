@@ -34,7 +34,8 @@ Because the Snake board is small, discrete, and fully observable, it's cheap to 
 
 ## Features
 
-- Smooth grid-based movement with keyboard (arrow keys / WASD) and on-screen touch controls for mobile
+- Smooth grid-based movement with keyboard (arrow keys / WASD), swipe gestures on the board, and on-screen touch controls for mobile
+- Timed power-ups (fog dissipator, time slower, algorithmic compass) that pop up briefly at surprise spots on the map, vanish if not eaten, and respawn later
 - Score and persistent high score (saved in `localStorage`)
 - Increasing speed as your score grows
 - Pause/resume with `Space`

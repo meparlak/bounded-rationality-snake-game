@@ -40,9 +40,26 @@
       <div id="toast" class="toast hidden"></div>
     </div>
 
+    <div class="quick-bar" id="quick-bar">
+      <button id="qb-pause">&#9208; Duraklat</button>
+    </div>
+
+    <div class="touch-controls" id="touch-controls">
+      <button data-dir="up" aria-label="Up">&#8593;</button>
+      <div class="middle-row">
+        <button data-dir="left" aria-label="Left">&#8592;</button>
+        <button data-dir="down" aria-label="Down">&#8595;</button>
+        <button data-dir="right" aria-label="Right">&#8594;</button>
+      </div>
+    </div>
+
     <div class="legend">
       <span class="legend-item"><span class="dot red"></span>Kırmızı: +1 (güvenli/tatmin edici)</span>
       <span class="legend-item"><span class="dot gold"></span>Altın: +5 (riskli/optimal)</span>
+      <span class="legend-item"><span class="dot blue"></span>Sis Dağıtıcı: görüşü kalıcı genişletir</span>
+      <span class="legend-item"><span class="dot purple"></span>Yavaşlatıcı: 5 sn zamanı yavaşlatır</span>
+      <span class="legend-item"><span class="dot orange"></span>Pusula: altını 10 sn gösterir</span>
+      <span class="legend-note">Güç yemleri haritada sürpriz anlarda kısa süreliğine belirir; yenmezse kaybolur.</span>
     </div>
 
     <div class="summary hidden" id="summary">
@@ -53,47 +70,12 @@
         <li>Toplam yem: <span id="sum-total">0</span> (Kırmızı: <span id="sum-red">0</span> · Altın: <span id="sum-gold">0</span>)</li>
         <li>Altın oranı: <span id="sum-ratio">0%</span></li>
         <li>En uzun "yetinme" serisi: <span id="sum-streak">0</span> kırmızı yem</li>
-        <li>Kullanılan araçlar: Sis x<span id="sum-fog">0</span> · Yavaşlatıcı x<span id="sum-slow">0</span> · Pusula x<span id="sum-compass">0</span></li>
+        <li>Toplanan güçler: Sis x<span id="sum-fog">0</span> · Yavaşlatıcı x<span id="sum-slow">0</span> · Pusula x<span id="sum-compass">0</span></li>
       </ul>
     </div>
 
-    <div class="shop" id="shop">
-      <div class="shop-item">
-        <div class="shop-item-info">
-          <strong>Sis Dağıtıcı</strong>
-          <span class="shop-desc">Görüş yarıçapını kalıcı artırır, tam bilgiye yaklaştırır</span>
-        </div>
-        <button id="buy-fog" class="shop-btn">Satın Al (<span id="fog-cost">20</span> altın)</button>
-      </div>
-      <div class="shop-item">
-        <div class="shop-item-info">
-          <strong>Zaman Yavaşlatıcı</strong>
-          <span class="shop-desc">5 sn boyunca hızı düşürür, düşünme süresi kazandırır (Q)</span>
-        </div>
-        <button id="buy-slow" class="shop-btn">Satın Al (15 altın)</button>
-        <button id="use-slow" class="shop-btn use-btn">Kullan (<span id="slow-count">0</span>)</button>
-      </div>
-      <div class="shop-item">
-        <div class="shop-item-info">
-          <strong>Algoritmik Pusula</strong>
-          <span class="shop-desc">Altın yemi sisin içinden 10 sn boyunca doğrudan gösterir (E)</span>
-        </div>
-        <button id="buy-compass" class="shop-btn">Satın Al (25 altın)</button>
-        <button id="use-compass" class="shop-btn use-btn">Kullan (<span id="compass-count">0</span>)</button>
-      </div>
-    </div>
-
     <div class="controls-hint">
-      Ok tuşları / WASD ile hareket &middot; Space ile duraklat
-    </div>
-
-    <div class="touch-controls" id="touch-controls">
-      <button data-dir="up" aria-label="Up">&#8593;</button>
-      <div class="middle-row">
-        <button data-dir="left" aria-label="Left">&#8592;</button>
-        <button data-dir="down" aria-label="Down">&#8595;</button>
-        <button data-dir="right" aria-label="Right">&#8594;</button>
-      </div>
+      Ok tuşları / WASD ile hareket &middot; Space ile duraklat &middot; Mobilde tahtayı kaydırarak yönlendir
     </div>
   </main>
 

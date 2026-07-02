@@ -8,21 +8,13 @@
   const overlayMessage = document.getElementById('overlay-message');
   const startBtn = document.getElementById('start-btn');
   const touchControls = document.getElementById('touch-controls');
+  const qbPauseBtn = document.getElementById('qb-pause');
   const loadFillEl = document.getElementById('load-fill');
   const loadLabelEl = document.getElementById('cognitive-label');
   const levelLabelEl = document.getElementById('level-label');
   const levelFillEl = document.getElementById('level-fill');
   const comboEl = document.getElementById('combo');
   const toastEl = document.getElementById('toast');
-
-  const fogCostEl = document.getElementById('fog-cost');
-  const buyFogBtn = document.getElementById('buy-fog');
-  const buySlowBtn = document.getElementById('buy-slow');
-  const useSlowBtn = document.getElementById('use-slow');
-  const slowCountEl = document.getElementById('slow-count');
-  const buyCompassBtn = document.getElementById('buy-compass');
-  const useCompassBtn = document.getElementById('use-compass');
-  const compassCountEl = document.getElementById('compass-count');
 
   const summaryEl = document.getElementById('summary');
   const summaryBehaviorEl = document.getElementById('summary-behavior');
@@ -67,18 +59,31 @@
   const GOLD_MIN_DISTANCE_TILES = TILE_COUNT * 0.55;
 
   // Mekanik 3: Zaman Yavaşlatıcı (zaman kısıtının geçici olarak kalkması).
-  const SLOW_COST = 15;
   const SLOW_DURATION_MS = 5000;
   const SLOW_FACTOR = 1.8;
-  let slowCharges = 0;
   let slowActiveUntil = 0;
 
   // Mekanik 3b: Algoritmik Pusula (altın yemi sisin içinden geçici olarak açığa çıkarır).
-  const COMPASS_COST = 25;
   const COMPASS_DURATION_MS = 10000;
-  let compassCharges = 0;
   let compassActiveUntil = 0;
   let compassUsedCount = 0;
+
+  // Mekanik 3c: Güç yemleri — eski mağaza eşyaları artık haritada sürpriz
+  // noktalarda kısa süreliğine belirir; yenmezse kaybolur, bir süre sonra
+  // rastgele bir tür yeniden çıkar. Sisin içinden de görünürler: uzaktaki
+  // fırsata gitmek/gitmemek kararı (temptation) oyuncuya bırakılır.
+  const POWERUP_VISIBLE_MS = 6000;
+  const POWERUP_SPAWN_MIN_MS = 8000;
+  const POWERUP_SPAWN_MAX_MS = 16000;
+  const POWERUP_MIN_DISTANCE_TILES = 4;
+  const POWERUP_INFO = {
+    fog: { color: '#38bdf8', label: 'Sis Dağıtıcı' },
+    slow: { color: '#a78bfa', label: 'Zaman Yavaşlatıcı' },
+    compass: { color: '#fb923c', label: 'Algoritmik Pusula' },
+  };
+  let powerup = null;
+  let powerupExpiresAt = 0;
+  let powerupNextSpawnAt = 0;
 
   // Mekanik 4: Beklenti eşiği / combo çarpanı — sadece güvenli (kırmızı)
   // yemle "yetinmeye" devam edildikçe altın kazancı azalır.
@@ -129,11 +134,12 @@
     comboMultiplier = 1;
     fogUpgradesBought = 0;
     visibilityRadiusTiles = BASE_VISIBILITY_TILES;
-    slowCharges = 0;
     slowActiveUntil = 0;
-    compassCharges = 0;
     compassActiveUntil = 0;
     compassUsedCount = 0;
+    powerup = null;
+    powerupExpiresAt = 0;
+    scheduleNextPowerupSpawn();
     maxRedStreak = 0;
     redEatenCount = 0;
     goldEatenCount = 0;
@@ -165,7 +171,7 @@
 
   function spawnRedFood() {
     const head = snake[0];
-    const cells = emptyCells([goldFood]);
+    const cells = emptyCells([goldFood, powerup]);
     let pool = cells.filter((c) => tileDist(c, head) <= visibilityRadiusTiles);
     if (pool.length === 0) {
       pool = [...cells].sort((a, b) => tileDist(a, head) - tileDist(b, head)).slice(0, 5);
@@ -175,7 +181,7 @@
 
   function spawnGoldFood() {
     const head = snake[0];
-    const cells = emptyCells([redFood]);
+    const cells = emptyCells([redFood, powerup]);
     let pool = cells.filter((c) => tileDist(c, head) >= GOLD_MIN_DISTANCE_TILES);
     if (pool.length === 0) {
       const sorted = [...cells].sort((a, b) => tileDist(b, head) - tileDist(a, head));
@@ -254,27 +260,9 @@
     levelLabelEl.textContent = level >= 10 ? 'Seviye 10 / 10 (Maksimum)' : `Seviye ${level} / 10`;
   }
 
-  function updateShopUi() {
-    const fogMaxed = fogUpgradesBought >= MAX_FOG_UPGRADES;
-    fogCostEl.textContent = fogMaxed ? '-' : String(fogCost());
-    buyFogBtn.disabled = fogMaxed || coins < fogCost();
-    buyFogBtn.textContent = fogMaxed ? 'Tam Bilgiye Ulaşıldı' : `Satın Al (${fogCost()} altın)`;
-
-    buySlowBtn.disabled = coins < SLOW_COST;
-    slowCountEl.textContent = String(slowCharges);
-    const slowOnCooldown = Date.now() < slowActiveUntil;
-    useSlowBtn.disabled = slowCharges <= 0 || slowOnCooldown;
-    useSlowBtn.textContent = slowOnCooldown
-      ? `Aktif (${Math.ceil((slowActiveUntil - Date.now()) / 1000)}s)`
-      : `Kullan (${slowCharges})`;
-
-    buyCompassBtn.disabled = coins < COMPASS_COST;
-    compassCountEl.textContent = String(compassCharges);
-    const compassOnCooldown = Date.now() < compassActiveUntil;
-    useCompassBtn.disabled = compassCharges <= 0 || compassOnCooldown;
-    useCompassBtn.textContent = compassOnCooldown
-      ? `Aktif (${Math.ceil((compassActiveUntil - Date.now()) / 1000)}s)`
-      : `Kullan (${compassCharges})`;
+  function updateQuickBarUi() {
+    qbPauseBtn.disabled = !running;
+    qbPauseBtn.textContent = paused ? '▶ Devam' : '⏸ Duraklat';
   }
 
   function updateComboUi() {
@@ -288,51 +276,51 @@
     updateLevelUi();
     updateCognitiveLoad();
     updateComboUi();
-    updateShopUi();
+    updateQuickBarUi();
   }
 
-  function fogCost() {
-    return 20 + fogUpgradesBought * 15;
+  function randBetween(min, max) {
+    return min + Math.random() * (max - min);
   }
 
-  function buyFog() {
-    if (fogUpgradesBought >= MAX_FOG_UPGRADES) return;
-    const cost = fogCost();
-    if (coins < cost) return;
-    coins -= cost;
-    fogUpgradesBought += 1;
-    visibilityRadiusTiles += FOG_UPGRADE_STEP_TILES;
-    updateHud();
+  function scheduleNextPowerupSpawn() {
+    powerupNextSpawnAt = Date.now() + randBetween(POWERUP_SPAWN_MIN_MS, POWERUP_SPAWN_MAX_MS);
   }
 
-  function buySlow() {
-    if (coins < SLOW_COST) return;
-    coins -= SLOW_COST;
-    slowCharges += 1;
-    updateHud();
+  function spawnPowerup() {
+    // Sis Dağıtıcı görüş tavana ulaştıysa artık çıkmaz.
+    const types = Object.keys(POWERUP_INFO).filter(
+      (t) => t !== 'fog' || fogUpgradesBought < MAX_FOG_UPGRADES,
+    );
+    const type = types[Math.floor(Math.random() * types.length)];
+    const head = snake[0];
+    const cells = emptyCells([redFood, goldFood]);
+    let pool = cells.filter((c) => tileDist(c, head) >= POWERUP_MIN_DISTANCE_TILES);
+    if (pool.length === 0) pool = cells;
+    if (pool.length === 0) {
+      scheduleNextPowerupSpawn();
+      return;
+    }
+    const cell = pool[Math.floor(Math.random() * pool.length)];
+    powerup = { type, x: cell.x, y: cell.y };
+    powerupExpiresAt = Date.now() + POWERUP_VISIBLE_MS;
+    showToast(`${POWERUP_INFO[type].label} belirdi!`, 1800);
   }
 
-  function useSlow() {
-    if (slowCharges <= 0 || Date.now() < slowActiveUntil) return;
-    slowCharges -= 1;
-    slowActiveUntil = Date.now() + SLOW_DURATION_MS;
-    slowUsedCount += 1;
-    updateHud();
-  }
-
-  function buyCompass() {
-    if (coins < COMPASS_COST) return;
-    coins -= COMPASS_COST;
-    compassCharges += 1;
-    updateHud();
-  }
-
-  function useCompass() {
-    if (compassCharges <= 0 || Date.now() < compassActiveUntil) return;
-    compassCharges -= 1;
-    compassActiveUntil = Date.now() + COMPASS_DURATION_MS;
-    compassUsedCount += 1;
-    updateHud();
+  function applyPowerup(type) {
+    if (type === 'fog') {
+      fogUpgradesBought += 1;
+      visibilityRadiusTiles += FOG_UPGRADE_STEP_TILES;
+      showToast('Görüş alanı kalıcı olarak genişledi!');
+    } else if (type === 'slow') {
+      slowActiveUntil = Date.now() + SLOW_DURATION_MS;
+      slowUsedCount += 1;
+      showToast('Zaman yavaşladı! (5 sn)');
+    } else {
+      compassActiveUntil = Date.now() + COMPASS_DURATION_MS;
+      compassUsedCount += 1;
+      showToast('Pusula aktif: altın görünür! (10 sn)');
+    }
   }
 
   function tick() {
@@ -351,6 +339,21 @@
     }
 
     snake.unshift(head);
+
+    const now = Date.now();
+    if (!powerup && now >= powerupNextSpawnAt) {
+      spawnPowerup();
+    } else if (powerup && now >= powerupExpiresAt) {
+      powerup = null;
+      scheduleNextPowerupSpawn();
+    }
+
+    if (powerup && head.x === powerup.x && head.y === powerup.y) {
+      applyPowerup(powerup.type);
+      powerup = null;
+      scheduleNextPowerupSpawn();
+      updateHud();
+    }
 
     // Kırmızı yem "her zaman" görüş alanının içinde kalmalıdır (tatmin
     // edici/kolay ulaşılır hedef); yılan uzaklaşıp onu görüş dışına
@@ -484,11 +487,37 @@
     } else {
       drawGoldHint(headPx, visibilityRadiusPx);
     }
+
+    // Güç yemleri sisin üstüne çizilir: uzaktaki fırsat her zaman görünür.
+    if (powerup) drawPowerup();
+  }
+
+  function drawPowerup() {
+    const { color } = POWERUP_INFO[powerup.type];
+    const remaining = powerupExpiresAt - Date.now();
+    // Son 2 saniyede yanıp sönerek kaybolmak üzere olduğunu belli eder.
+    if (remaining < 2000 && Math.floor(remaining / 200) % 2 === 0) return;
+    const cx = powerup.x * GRID_SIZE + GRID_SIZE / 2;
+    const cy = powerup.y * GRID_SIZE + GRID_SIZE / 2;
+    const pulse = 1 + 0.15 * Math.sin(performance.now() / 180);
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, (GRID_SIZE / 2 - 4) * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, (GRID_SIZE / 2 - 1) * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function renderLoop() {
     draw();
-    updateShopUi();
+    updateQuickBarUi();
     rafId = requestAnimationFrame(renderLoop);
   }
 
@@ -564,6 +593,7 @@
     startBtn.textContent = 'Yeniden Başlat';
     overlay.classList.remove('hidden');
     showSummary();
+    updateQuickBarUi();
   }
 
   function startGame() {
@@ -590,6 +620,8 @@
       startRender();
       scheduleNext();
     }
+    // render döngüsü duraklamada durduğu için buton durumları elle tazelenir
+    updateQuickBarUi();
   }
 
   function setDirection(x, y) {
@@ -616,17 +648,6 @@
       return;
     }
 
-    if (running && !paused) {
-      if (e.key === 'q' || e.key === 'Q') {
-        useSlow();
-        return;
-      }
-      if (e.key === 'e' || e.key === 'E') {
-        useCompass();
-        return;
-      }
-    }
-
     const dir = KEY_MAP[e.key];
     if (dir && running && !paused) {
       e.preventDefault();
@@ -642,19 +663,50 @@
     }
   });
 
-  touchControls.addEventListener('click', (e) => {
+  // pointerdown, click'e göre dokunuşta ~1 kare erken tetiklenir; hızlı bir
+  // oyunda bu gecikme ölüm/kaçış farkı yaratır.
+  touchControls.addEventListener('pointerdown', (e) => {
     const btn = e.target.closest('button[data-dir]');
     if (!btn || !running || paused) return;
+    e.preventDefault();
     const map = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     const [x, y] = map[btn.dataset.dir];
     setDirection(x, y);
   });
 
-  buyFogBtn.addEventListener('click', buyFog);
-  buySlowBtn.addEventListener('click', buySlow);
-  useSlowBtn.addEventListener('click', useSlow);
-  buyCompassBtn.addEventListener('click', buyCompass);
-  useCompassBtn.addEventListener('click', useCompass);
+  // Mobil ana kontrol: tahta üzerinde kaydırarak yön verme. Parmak
+  // kaldırılmadan da sürüklemeye devam ederek art arda yön değiştirilebilir;
+  // her eşik aşımında referans noktası güncellenir.
+  const SWIPE_MIN_PX = 24;
+  let swipeRef = null;
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (!running || paused) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    swipeRef = { x: t.clientX, y: t.clientY };
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (!swipeRef) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const dx = t.clientX - swipeRef.x;
+    const dy = t.clientY - swipeRef.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN_PX) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDirection(Math.sign(dx), 0);
+    } else {
+      setDirection(0, Math.sign(dy));
+    }
+    swipeRef = { x: t.clientX, y: t.clientY };
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => {
+    swipeRef = null;
+  });
+
+  qbPauseBtn.addEventListener('click', togglePause);
 
   // initial paint so the board isn't blank behind the overlay
   resetState();
